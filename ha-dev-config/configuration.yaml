@@ -1,0 +1,14 @@
+default_config:
+
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/family-calendar-card.js
+      type: module
+  dashboards:
+    lovelace-yaml:
+      mode: yaml
+      title: Test Calendar
+      icon: mdi:script
+      show_in_sidebar: true
+      filename: dashboard.yaml

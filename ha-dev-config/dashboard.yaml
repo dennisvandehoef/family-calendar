@@ -1,0 +1,5 @@
+views:
+  - title: test
+    cards:
+      - type: custom:family-calendar-card
+        entity: sun.sun
