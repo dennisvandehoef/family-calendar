@@ -1,0 +1,29 @@
+{
+  "name": "family-calendar-card",
+  "version": "0.1.",
+  "description": "Home assistand card that transfers your tipical family calender with columns into a custom card",
+  "source": "src/index.js",
+  "module": "dist/family-calendar-card.js",
+  "scripts": {
+    "watch": "parcel watch",
+    "build": "parcel build"
+  },
+  "targets": {
+    "module": {
+      "includeNodeModules": true,
+      "optimize": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dennisvandehoef/family-calendar.git"
+  },
+  "author": "Dennis van de Hoef",
+  "licence": "MIT",
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "parcel": "^2.12.0"
+  }
+}
