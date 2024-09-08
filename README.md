@@ -35,6 +35,8 @@ These are future planned improvements, the implementation sequence can be differ
 - [ ] add possibility to translate
 - [ ] configure date format
 - [ ] show details in popup
+- [ ] display not-yet accepted differently
+- [ ] option to hide/show redjected
 - [ ] allign appoinmtments > appointments starting at 14 o'clock are all on the same hight, if on the same day (and below the ones starting at 9 o'clock, if excists)
 
 
