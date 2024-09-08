@@ -11,7 +11,12 @@ This is still under development and not ready to be used, but I wanted write iss
 - [x] Create basic card JS framework code
 - [ ] Add basic calander HTML (30 rows, 6 columns, with upcomming 30 dates)
 - [ ] Be able to configure number of columns, column title & calendars per column
-- [ ] Show events on the correct days, multiple events same time
+- [ ] Show events ...
+  - [ ] on the correct days
+  - [ ] multiple events same time
+  - [ ] multi day events
+    - [ ] starting before first visible day
+    - [ ] ending after last visible day
 - [ ] Show in list of cards
 
 ### first improvements
