@@ -2,16 +2,37 @@ views:
   - title: Masonry
     cards:
       - type: custom:family-calendar-card
-        entity: sun.sun
+        columns:
+          - title: "Person 1"
+            calendars:
+              - calendar.test_1
+          - title: "Person 2"
+            calendars:
+              - calendar.test_2
+              - calendar.test_3
   - type: sidebar
     path: sidebar
     title: sidebar
     cards:
-      - type: custom:family-calendar-card
-        entity: sun.sun
+      - type: "custom:family-calendar-card"
+        columns:
+          - title: "Person 1"
+            calendars:
+              - calendar.test_1
+          - title: "Person 2"
+            calendars:
+              - calendar.test_2
+              - calendar.test_3
   - type: panel
     path: panel
     title: panel
     cards:
       - type: custom:family-calendar-card
-        entity: sun.sun
+        columns:
+          - title: "Person 1"
+            calendars:
+              - calendar.test_1
+          - title: "Person 2"
+            calendars:
+              - calendar.test_2
+              - calendar.test_3
