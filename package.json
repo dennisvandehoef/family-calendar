@@ -21,7 +21,8 @@
   "author": "Dennis van de Hoef",
   "licence": "MIT",
   "dependencies": {
-    "lit": "^3.2.0"
+    "lit": "^3.2.0",
+    "luxon": "^3.5.0"
   },
   "devDependencies": {
     "parcel": "^2.12.0"
