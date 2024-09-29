@@ -1,5 +1,17 @@
 views:
-  - title: test
+  - title: Masonry
+    cards:
+      - type: custom:family-calendar-card
+        entity: sun.sun
+  - type: sidebar
+    path: sidebar
+    title: sidebar
+    cards:
+      - type: custom:family-calendar-card
+        entity: sun.sun
+  - type: panel
+    path: panel
+    title: panel
     cards:
       - type: custom:family-calendar-card
         entity: sun.sun
