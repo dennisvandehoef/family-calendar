@@ -60,7 +60,11 @@ export class FamilyCalendarCard extends LitElement {
             <div class="family-calendar--row">
                 <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
                 ${this.config.columns.map((column) => {
-            const eventsForColumn = this._getEventsForColumn(dateString, column.calendars);
+            // Use a Set to avoid processing the same calendar multiple times
+            const uniqueCalendars = new Set(column.calendars);
+            const eventsForColumn = Array.from(uniqueCalendars)
+                .flatMap(calendar => this._getEventsForColumn(dateString, calendar));
+
             return html`
                         <div class="family-calendar--field family-calendar--date">
                             ${eventsForColumn.length > 0
@@ -78,28 +82,26 @@ export class FamilyCalendarCard extends LitElement {
         `;
     }
 
-    _getEventsForColumn(dateString, calendars) {
+    _getEventsForColumn(dateString, calendar) {
         const eventsForDate = [];
+        const events = this.events[calendar] || [];
 
-        calendars.forEach(calendar => {
-            const events = this.events[calendar] || [];
-            events.forEach(event => {
-                const eventStart = DateTime.fromISO(event.start);
-                const eventEnd = DateTime.fromISO(event.end);
+        events.forEach(event => {
+            const eventStart = DateTime.fromISO(event.start);
+            const eventEnd = DateTime.fromISO(event.end);
 
-                // Event occurs on the same day or spans this date
-                const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
-                    (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
+            // Event occurs on the same day or spans this date
+            const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
+                (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
 
-                if (isOnDate) {
-                    const isFullDayEvent = event.all_day;
-                    const timeRange = isFullDayEvent
-                        ? 'All Day'
-                        : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
+            if (isOnDate) {
+                const isFullDayEvent = event.all_day;
+                const timeRange = isFullDayEvent
+                    ? 'All Day'
+                    : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
 
-                    eventsForDate.push({ time: timeRange, title: event.summary });
-                }
-            });
+                eventsForDate.push({ time: timeRange, title: event.summary });
+            }
         });
 
         return eventsForDate;
@@ -130,12 +132,16 @@ export class FamilyCalendarCard extends LitElement {
             }
         };
 
-        const calendarPromises = this.config.columns.flatMap(column =>
-            column.calendars.map(async (calendar) => {
-                const events = await fetchCalendarEvents(calendar);
-                this.events[calendar] = events;
-            })
+        // Create a unique set of calendars to avoid duplicate fetch calls
+        const uniqueCalendars = new Set(
+            this.config.columns.flatMap(column => column.calendars)
         );
+
+        // Fetch events for each unique calendar
+        const calendarPromises = Array.from(uniqueCalendars).map(async (calendar) => {
+            const events = await fetchCalendarEvents(calendar);
+            this.events[calendar] = events;
+        });
 
         // Wait for all calendar fetches to complete
         await Promise.all(calendarPromises);
@@ -143,7 +149,6 @@ export class FamilyCalendarCard extends LitElement {
         this._eventsFetched = true;
         this.requestUpdate(); // Trigger re-render after events are fetched
     }
-
 
     setConfig(config) {
         if (!config.columns || !Array.isArray(config.columns)) {

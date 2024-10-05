@@ -6,6 +6,7 @@ views:
           - title: "Person 1"
             calendars:
               - calendar.test_1
+              - calendar.test_3
           - title: "Person 2"
             calendars:
               - calendar.test_2
@@ -19,6 +20,7 @@ views:
           - title: "Person 1"
             calendars:
               - calendar.test_1
+              - calendar.test_3
           - title: "Person 2"
             calendars:
               - calendar.test_2
@@ -32,6 +34,7 @@ views:
           - title: "Person 1"
             calendars:
               - calendar.test_1
+              - calendar.test_3
           - title: "Person 2"
             calendars:
               - calendar.test_2
