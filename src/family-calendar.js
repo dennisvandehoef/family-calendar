@@ -20,6 +20,7 @@ export class FamilyCalendarCard extends LitElement {
         this.currentDate = DateTime.now();
         this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
         this.colorIndex = 0; // Index for unique color generation
+        this.timeFormat = '24-hour'; // Default time format
     }
 
     render() {
@@ -58,14 +59,14 @@ export class FamilyCalendarCard extends LitElement {
 
     _renderRow(date) {
         const dateString = date.toFormat('yyyy-MM-dd');
+        const allEventsForDate = this._getAllEventsForDate(dateString);
+
         return html`
             <div class="family-calendar--row">
                 <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
                 ${this.config.columns.map((column) => {
-            const uniqueCalendars = new Set(column.calendars);
-            const eventsForColumn = Array.from(uniqueCalendars)
-                .flatMap(calendar => this._getEventsForColumn(dateString, calendar));
-
+            // Filter events for the current column's calendars
+            const eventsForColumn = allEventsForDate.filter(event => column.calendars.includes(event.calendar));
             return html`
                         <div class="family-calendar--field family-calendar--date">
                             ${eventsForColumn.length > 0
@@ -83,34 +84,41 @@ export class FamilyCalendarCard extends LitElement {
         `;
     }
 
-    _getEventsForColumn(dateString, calendar) {
-        const eventsForDate = [];
-        const events = this.events[calendar] || [];
+    _getAllEventsForDate(dateString) {
+        const allEvents = [];
 
-        // Assign color to calendar if it doesn't already have one
-        if (!this.calendarColors[calendar]) {
-            this.calendarColors[calendar] = this._generateLightColor();
+        // Collect events across all calendars for a given date
+        for (const calendar of Object.keys(this.events)) {
+            const events = this.events[calendar] || [];
+
+            // Assign color to calendar if it doesn't already have one
+            if (!this.calendarColors[calendar]) {
+                this.calendarColors[calendar] = this._generateLightColor();
+            }
+
+            events.forEach(event => {
+                const eventStart = DateTime.fromISO(event.start);
+                const eventEnd = DateTime.fromISO(event.end);
+
+                // Event occurs on the same day or spans this date
+                const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
+                    (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
+
+                if (isOnDate) {
+                    const isFullDayEvent = event.all_day;
+                    const timeRange = isFullDayEvent
+                        ? 'All Day'
+                        : this.timeFormat === '24-hour'
+                            ? `${eventStart.toLocaleString(DateTime.TIME_24_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_24_SIMPLE)}`
+                            : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
+
+                    allEvents.push({ time: timeRange, title: event.summary, calendar, start: eventStart });
+                }
+            });
         }
 
-        events.forEach(event => {
-            const eventStart = DateTime.fromISO(event.start);
-            const eventEnd = DateTime.fromISO(event.end);
-
-            // Event occurs on the same day or spans this date
-            const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
-                (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
-
-            if (isOnDate) {
-                const isFullDayEvent = event.all_day;
-                const timeRange = isFullDayEvent
-                    ? 'All Day'
-                    : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
-
-                eventsForDate.push({ time: timeRange, title: event.summary, calendar }); // Include calendar info
-            }
-        });
-
-        return eventsForDate;
+        // Sort events by start time
+        return allEvents.sort((a, b) => a.start - b.start);
     }
 
     _generateLightColor() {
@@ -168,6 +176,9 @@ export class FamilyCalendarCard extends LitElement {
         if (!config.columns || !Array.isArray(config.columns)) {
             throw new Error("You need to define columns with titles and associated calendars.");
         }
+
+        // Check for time format in the configuration
+        this.timeFormat = config.time_format || '24-hour'; // Default to 24-hour if not specified
         this.config = config;
     }
 

@@ -30,6 +30,7 @@ views:
     title: panel
     cards:
       - type: custom:family-calendar-card
+        time_format: "AM/PM"
         columns:
           - title: "Person 1"
             calendars:
