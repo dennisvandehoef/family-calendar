@@ -106,8 +106,8 @@ export class FamilyCalendarCard extends LitElement {
     }
 
     async _fetchEvents() {
-        const startDateISO = this.currentDate.toISO();
-        const endDateISO = this.endDate.toISO();
+        const startDateISO = this.currentDate.startOf('day').toISO(); // Start of today
+        const endDateISO = this.endDate.toISO(); // End date remains the same
 
         this.events = {}; // Reset all events before fetching
 
@@ -143,6 +143,7 @@ export class FamilyCalendarCard extends LitElement {
         this._eventsFetched = true;
         this.requestUpdate(); // Trigger re-render after events are fetched
     }
+
 
     setConfig(config) {
         if (!config.columns || !Array.isArray(config.columns)) {
