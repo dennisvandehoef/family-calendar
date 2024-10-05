@@ -14,8 +14,10 @@ export class FamilyCalendarCard extends LitElement {
 
     constructor() {
         super();
-        this.events = {}; // Contains events for each calendar
+        this.events = {}; // Holds events for each calendar
         this._eventsFetched = false;
+        this.currentDate = DateTime.now();
+        this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
     }
 
     render() {
@@ -33,34 +35,27 @@ export class FamilyCalendarCard extends LitElement {
         return html`
             <div class="family-calendar--row family-calendar--header-row">
                 <div class="family-calendar--field family-calendar--row-header"></div> <!-- Empty cell for the date column -->
-                ${this.config.columns.map((column) => {
-            return html`
-                        <div class="family-calendar--field family-calendar--column-header">${column.title}</div>
-                    `;
-        })}
+                ${this.config.columns.map((column) => html`
+                    <div class="family-calendar--field family-calendar--column-header">${column.title}</div>
+                `)}
             </div>
         `;
     }
 
     _renderCalendar() {
-        let currentDate = DateTime.now();
-        let endDate = currentDate.plus({ days: 30 });
+        const rows = [];
+        let currentDate = this.currentDate;
 
-        let rows = [];
-
-        while (currentDate < endDate) {
+        while (currentDate <= this.endDate) {
             rows.push(this._renderRow(currentDate));
             currentDate = currentDate.plus({ days: 1 });
         }
 
-        return html`
-        ${rows.map((row) => html`${row}`)}
-        `;
+        return html`${rows.map((row) => html`${row}`)}`;
     }
 
     _renderRow(date) {
         const dateString = date.toFormat('yyyy-MM-dd');
-
         return html`
             <div class="family-calendar--row">
                 <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
@@ -84,75 +79,69 @@ export class FamilyCalendarCard extends LitElement {
     }
 
     _getEventsForColumn(dateString, calendars) {
-        const eventsForColumn = [];
+        const eventsForDate = [];
 
-        // Loop through each calendar in the column
         calendars.forEach(calendar => {
-            if (this.events[calendar]) {
-                this.events[calendar].forEach(event => {
-                    const eventStart = DateTime.fromISO(event.start);
-                    const eventEnd = DateTime.fromISO(event.end);
+            const events = this.events[calendar] || [];
+            events.forEach(event => {
+                const eventStart = DateTime.fromISO(event.start);
+                const eventEnd = DateTime.fromISO(event.end);
 
-                    // Check if the event date matches the row's date or spans over this date
-                    if (eventStart.toFormat('yyyy-MM-dd') === dateString || (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString))) {
-                        const isFullDayEvent = eventStart.hasSame(eventEnd, 'day') && event.all_day;
+                // Event occurs on the same day or spans this date
+                const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
+                    (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
 
-                        const timeRange = isFullDayEvent
-                            ? 'All Day'
-                            : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
+                if (isOnDate) {
+                    const isFullDayEvent = event.all_day;
+                    const timeRange = isFullDayEvent
+                        ? 'All Day'
+                        : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
 
-                        eventsForColumn.push({
-                            time: timeRange,
-                            title: event.summary,
-                        });
-                    }
-                });
-            }
+                    eventsForDate.push({ time: timeRange, title: event.summary });
+                }
+            });
         });
 
-        return eventsForColumn;
+        return eventsForDate;
     }
 
     async _fetchEvents() {
-        let currentDate = DateTime.now();
-        let endDate = currentDate.plus({ days: 30 });
+        const startDateISO = this.currentDate.toISO();
+        const endDateISO = this.endDate.toISO();
 
-        let startDateISO = currentDate.toISO();
-        let endDateISO = endDate.toISO();
+        this.events = {}; // Reset all events before fetching
 
-        // Clear all previous events before fetching new ones
-        this.events = {};
-
-        this.config.columns.forEach(column => {
-            column.calendars.forEach(calendar => {
-                // Reset events for each calendar before fetching
-                this.events[calendar] = [];
-
-                this._hass.callApi(
+        const fetchCalendarEvents = async (calendar) => {
+            try {
+                const response = await this._hass.callApi(
                     'get',
                     `calendars/${calendar}?start=${encodeURIComponent(startDateISO)}&end=${encodeURIComponent(endDateISO)}`
-                ).then(response => {
-                    response.forEach(event => {
-                        const startDate = DateTime.fromISO(event.start.dateTime);
-                        const endDate = DateTime.fromISO(event.end.dateTime);
+                );
 
-                        let fullDay = !event.start.dateTime;
+                return response.map(event => ({
+                    summary: event.summary,
+                    start: event.start.dateTime,
+                    end: event.end.dateTime,
+                    all_day: !event.start.dateTime,
+                }));
+            } catch (error) {
+                console.error('Error fetching calendar events:', error);
+                return [];
+            }
+        };
 
-                        this.events[calendar].push({
-                            summary: event.summary,
-                            start: startDate.toISO(),
-                            end: endDate.toISO(),
-                            all_day: fullDay,
-                        });
-                    });
+        const calendarPromises = this.config.columns.flatMap(column =>
+            column.calendars.map(async (calendar) => {
+                const events = await fetchCalendarEvents(calendar);
+                this.events[calendar] = events;
+            })
+        );
 
-                    this._eventsFetched = true;
-                    this.requestUpdate(); // Re-render after events are fetched
-                }).catch(error => {
-                    console.error('Error while fetching calendar:', error);
-                });
-            });
-        });
+        // Wait for all calendar fetches to complete
+        await Promise.all(calendarPromises);
+
+        this._eventsFetched = true;
+        this.requestUpdate(); // Trigger re-render after events are fetched
     }
 
     setConfig(config) {
