@@ -15,9 +15,11 @@ export class FamilyCalendarCard extends LitElement {
     constructor() {
         super();
         this.events = {}; // Holds events for each calendar
+        this.calendarColors = {}; // Map calendar to color
         this._eventsFetched = false;
         this.currentDate = DateTime.now();
         this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
+        this.colorIndex = 0; // Index for unique color generation
     }
 
     render() {
@@ -60,7 +62,6 @@ export class FamilyCalendarCard extends LitElement {
             <div class="family-calendar--row">
                 <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
                 ${this.config.columns.map((column) => {
-            // Use a Set to avoid processing the same calendar multiple times
             const uniqueCalendars = new Set(column.calendars);
             const eventsForColumn = Array.from(uniqueCalendars)
                 .flatMap(calendar => this._getEventsForColumn(dateString, calendar));
@@ -69,7 +70,7 @@ export class FamilyCalendarCard extends LitElement {
                         <div class="family-calendar--field family-calendar--date">
                             ${eventsForColumn.length > 0
                     ? eventsForColumn.map(event => html`
-                                    <div class="family-calendar--event">
+                                    <div class="family-calendar--event" style="background-color: ${this.calendarColors[event.calendar]};">
                                         <div class="family-calendar--event-time">${event.time}</div>
                                         <div class="family-calendar--event-title">${event.title}</div>
                                     </div>
@@ -86,6 +87,11 @@ export class FamilyCalendarCard extends LitElement {
         const eventsForDate = [];
         const events = this.events[calendar] || [];
 
+        // Assign color to calendar if it doesn't already have one
+        if (!this.calendarColors[calendar]) {
+            this.calendarColors[calendar] = this._generateLightColor();
+        }
+
         events.forEach(event => {
             const eventStart = DateTime.fromISO(event.start);
             const eventEnd = DateTime.fromISO(event.end);
@@ -100,11 +106,19 @@ export class FamilyCalendarCard extends LitElement {
                     ? 'All Day'
                     : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
 
-                eventsForDate.push({ time: timeRange, title: event.summary });
+                eventsForDate.push({ time: timeRange, title: event.summary, calendar }); // Include calendar info
             }
         });
 
         return eventsForDate;
+    }
+
+    _generateLightColor() {
+        // Generates a random light color
+        const h = Math.floor(Math.random() * 360); // Hue
+        const s = 70; // Saturation
+        const l = Math.floor(Math.random() * 30 + 70); // Lightness (70% to 100%)
+        return `hsl(${h}, ${s}%, ${l}%)`;
     }
 
     async _fetchEvents() {

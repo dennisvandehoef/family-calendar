@@ -18,6 +18,7 @@ This is still under development and not ready to be used, but I wanted write iss
     - [ ] starting before first visible day
     - [ ] ending after last visible day
 - [ ] Show card in list of cards
+- [ ] basic layout
 
 ### first improvements
 
