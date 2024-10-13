@@ -203,6 +203,49 @@ export class FamilyCalendarCard extends LitElement {
         return (event1Start < event2End) && (event1End > event2Start);
     }
 
+    // Helper function to check if an event should be displayed on the current date
+    _shouldDisplayEventOnDate(event, currentDate, nextDate) {
+        const eventStart = DateTime.fromISO(event.start);
+        let eventEnd = event.end ? DateTime.fromISO(event.end) : null;
+
+        // Handle events that have no explicit end time or are all-day
+        if (!eventEnd) {
+            if (event.all_day) {
+                eventEnd = eventStart.endOf('day');
+            } else {
+                eventEnd = eventStart.plus({ hours: 1 }); // Default 1-hour duration
+            }
+        }
+
+        const eventStartsToday = eventStart >= currentDate && eventStart < nextDate;
+        const eventEndsToday = eventEnd >= currentDate && eventEnd < nextDate;
+        const eventSpansToday = eventStart < currentDate && eventEnd >= nextDate;
+
+        return eventStartsToday || eventEndsToday || eventSpansToday;
+    }
+
+    // Helper function to adjust the event's start and end times for multi-day events
+    _adjustEventTimesForDate(event, currentDate, nextDate) {
+        const eventStart = DateTime.fromISO(event.start);
+        let eventEnd = event.end ? DateTime.fromISO(event.end) : null;
+
+        // Handle events that have no explicit end time
+        if (!eventEnd) {
+            if (event.all_day) {
+                eventEnd = eventStart.endOf('day');
+            } else {
+                eventEnd = eventStart.plus({ hours: 1 }); // Default 1-hour duration
+            }
+        }
+
+        // Adjust start and end times for multi-day events
+        const adjustedStart = eventStart < currentDate ? currentDate.startOf('day') : eventStart;
+        const adjustedEnd = eventEnd > nextDate ? currentDate.endOf('day') : eventEnd;
+
+        return { adjustedStart, adjustedEnd };
+    }
+
+    // Main function, simplified to call the helper functions
     _getAllEventsForDate(dateString) {
         const allEvents = [];
         const currentDate = DateTime.fromISO(dateString);
@@ -217,29 +260,9 @@ export class FamilyCalendarCard extends LitElement {
             }
 
             events.forEach(event => {
-                const eventStart = DateTime.fromISO(event.start);
-                let eventEnd = event.end ? DateTime.fromISO(event.end) : null;
-
-                // Handle events that have no explicit end time or are all-day
-                if (!eventEnd) {
-                    if (event.all_day) {
-                        eventEnd = eventStart.endOf('day');
-                    } else {
-                        eventEnd = eventStart.plus({ hours: 1 }); // Default 1-hour duration
-                    }
-                }
-
-                // Check if the event spans the current date
-                const eventStartsToday = eventStart >= currentDate && eventStart < nextDate;
-                const eventEndsToday = eventEnd >= currentDate && eventEnd < nextDate;
-                const eventSpansToday = eventStart < currentDate && eventEnd >= nextDate;
-
-                if (eventStartsToday || eventEndsToday || eventSpansToday) {
+                if (this._shouldDisplayEventOnDate(event, currentDate, nextDate)) {
+                    const { adjustedStart, adjustedEnd } = this._adjustEventTimesForDate(event, currentDate, nextDate);
                     const isFullDayEvent = event.all_day;
-
-                    // Adjust start and end times for multi-day events
-                    const adjustedStart = eventStart < currentDate ? currentDate.startOf('day') : eventStart;
-                    const adjustedEnd = eventEnd > nextDate ? currentDate.endOf('day') : eventEnd;
 
                     const timeRange = isFullDayEvent
                         ? 'All Day'
@@ -261,6 +284,7 @@ export class FamilyCalendarCard extends LitElement {
         // Sort events by start time
         return allEvents.sort((a, b) => a.start - b.start);
     }
+
 
     _generateLightColor() {
         // Generates a random light color
