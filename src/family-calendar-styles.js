@@ -25,6 +25,10 @@ export default css`
         padding: 10px;
     }
 
+    .family-calendar--date{
+        position: relative;
+    }
+
     .family-calendar--column-header {
         font-weight: bold;
         text-align: center;
@@ -36,6 +40,7 @@ export default css`
         display: grid;
         grid-auto-flow: column;
         gap: 5px; /* Space between events */
+        position: absolute;
     }
 
     .family-calendar--event {
@@ -44,6 +49,7 @@ export default css`
         border-radius: 4px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         color: #333;
+        overflow: hidden;
     }
 
     .family-calendar--event-time {

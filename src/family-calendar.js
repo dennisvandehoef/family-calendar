@@ -21,6 +21,7 @@ export class FamilyCalendarCard extends LitElement {
         this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
         this.colorIndex = 0; // Index for unique color generation
         this.timeFormat = '24-hour'; // Default time format
+        this.oneHourHeight = 40; // the height of one hour in pixels
     }
 
     render() {
@@ -60,6 +61,7 @@ export class FamilyCalendarCard extends LitElement {
     _renderRow(date) {
         const dateString = date.toFormat('yyyy-MM-dd');
         const allEventsForDate = this._getAllEventsForDate(dateString);
+        const earliestEvent = this._findEarliestStartingEvent(allEventsForDate);
 
         return html`
         <div class="family-calendar--row">
@@ -71,25 +73,76 @@ export class FamilyCalendarCard extends LitElement {
             // Group overlapping events
             const eventGroups = this._groupOverlappingEvents(eventsForColumn);
 
+            if (eventGroups.length == 0) {
+                return html`<div class="family-calendar--field family-calendar--date">No events</div>`
+            }
+
+            const { top: baselineTop } = this._calculatePosition(earliestEvent.start, earliestEvent.end);
+            let fullHeight = 0;
+
             return html`
                     <div class="family-calendar--field family-calendar--date">
-                        ${eventGroups.length > 0
-                    ? eventGroups.map(group => html`
-                                <div class="family-calendar--event-grid" style="grid-template-columns: repeat(${group.length}, 1fr);">
-                                    ${group.map(event => html`
-                                        <div class="family-calendar--event" style="background-color: ${this.calendarColors[event.calendar]};">
-                                            <div class="family-calendar--event-time">${event.time}</div>
-                                            <div class="family-calendar--event-title">${event.title}</div>
-                                        </div>
-                                    `)}
-                                </div>
-                            `)
-                    : 'No events'}
+                        ${eventGroups.map(group => {
+                // Assume the first event in the group defines the start time
+                const start = DateTime.fromISO(group[0].start);
+                const end = group.reduce((latestEnd, event) => {
+                    const eventEnd = event.end ? DateTime.fromISO(event.end) : DateTime.fromISO(event.start).plus({ hours: 1 });
+                    return latestEnd > eventEnd ? latestEnd : eventEnd;
+                }, start);
+
+                const { top, height } = this._calculatePosition(start, end, baselineTop);
+
+                fullHeight = height + top;
+
+                return html`
+                                    <div class="family-calendar--event-grid" style="top:${top}px; height: ${height}px; grid-template-columns: repeat(${group.length}, 1fr);">
+                                        ${group.map(event => {
+                    const { top: eventTop, height: eventHeight } = this._calculatePosition(event.start, event.end, (baselineTop + top));
+
+                    return html`
+                                            <div class="family-calendar--event" style="min-height: ${this.oneHourHeight}px; margin-top:${eventTop}px; height: ${eventHeight}px; background-color: ${this.calendarColors[event.calendar]};">
+                                                <div class="family-calendar--event-time">${event.time}</div>
+                                                <div class="family-calendar--event-title">${event.title}</div>
+                                            </div>
+                                        `})}
+                                    </div>
+                                `;
+            })}
+
+                    <div class="family-calendar--event-filler" style="height: ${fullHeight}px;"></div>
                     </div>
                 `;
         })}
+
         </div>
     `;
+    }
+
+    _calculatePosition(start, end, reduceTop = 0) {
+        const startMinutes = (start.hour * 60) + start.minute;
+        const endMinutes = (end.hour * 60) + end.minute;
+        const durationMinutes = endMinutes - startMinutes;
+
+        const minuteHeight = this.oneHourHeight / 60;
+
+        // Convert to percentage or pixel-based positioning
+        const top = (startMinutes * minuteHeight) - reduceTop;
+        const height = durationMinutes * minuteHeight;
+
+        return { top, height };
+    }
+
+    _findEarliestStartingEvent(events) {
+        if (!events || events.length === 0) {
+            return null; // Return null if there are no events
+        }
+
+        return events.reduce((earliest, current) => {
+            const earliestStart = DateTime.fromISO(earliest.start);
+            const currentStart = DateTime.fromISO(current.start);
+
+            return currentStart < earliestStart ? current : earliest;
+        });
     }
 
     _groupOverlappingEvents(events) {
