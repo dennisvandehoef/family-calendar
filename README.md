@@ -14,7 +14,12 @@ This is still under development and not ready to be used, but I wanted write iss
 - [x] Show events ...
   - [x] on the correct days
   - [x] multiple events same time
-  - [ ] multi day events
+  - [x] multi day events
+    - [x] middle of calendar
+    - [x] starting before first visible day
+    - [x] ending after last visible day
+  - [ ] full day events
+    - [ ] middle of calendar
     - [ ] starting before first visible day
     - [ ] ending after last visible day
 - [ ] Show card in list of cards

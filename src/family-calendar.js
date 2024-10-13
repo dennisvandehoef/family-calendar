@@ -19,7 +19,7 @@ export class FamilyCalendarCard extends LitElement {
         this._eventsFetched = false;
         this.currentDate = DateTime.now();
         this.numberOfDays = 30; // the number of days we want to render
-        this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
+        this.endDate = this.currentDate.plus({ days: this.numberOfDays }); // Calculated only once
         this.colorIndex = 0; // Index for unique color generation
         this.timeFormat = '24-hour'; // Default time format
         this.oneHourHeight = 40; // the height of one hour in pixels
@@ -205,6 +205,8 @@ export class FamilyCalendarCard extends LitElement {
 
     _getAllEventsForDate(dateString) {
         const allEvents = [];
+        const currentDate = DateTime.fromISO(dateString);
+        const nextDate = currentDate.plus({ days: 1 });
 
         for (const calendar of Object.keys(this.events)) {
             const events = this.events[calendar] || [];
@@ -218,30 +220,40 @@ export class FamilyCalendarCard extends LitElement {
                 const eventStart = DateTime.fromISO(event.start);
                 let eventEnd = event.end ? DateTime.fromISO(event.end) : null;
 
-                // Handle full-day events or events without an explicit end
+                // Handle events that have no explicit end time or are all-day
                 if (!eventEnd) {
                     if (event.all_day) {
-                        // Set full-day event as lasting from start of the day to the end
                         eventEnd = eventStart.endOf('day');
                     } else {
-                        // Default to 1-hour duration for events without an end
-                        eventEnd = eventStart.plus({ hours: 1 });
+                        eventEnd = eventStart.plus({ hours: 1 }); // Default 1-hour duration
                     }
                 }
 
-                // Event occurs on the same day or spans this date
-                const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
-                    (eventStart < DateTime.fromISO(dateString) && eventEnd >= DateTime.fromISO(dateString));
+                // Check if the event spans the current date
+                const eventStartsToday = eventStart >= currentDate && eventStart < nextDate;
+                const eventEndsToday = eventEnd >= currentDate && eventEnd < nextDate;
+                const eventSpansToday = eventStart < currentDate && eventEnd >= nextDate;
 
-                if (isOnDate) {
+                if (eventStartsToday || eventEndsToday || eventSpansToday) {
                     const isFullDayEvent = event.all_day;
+
+                    // Adjust start and end times for multi-day events
+                    const adjustedStart = eventStart < currentDate ? currentDate.startOf('day') : eventStart;
+                    const adjustedEnd = eventEnd > nextDate ? currentDate.endOf('day') : eventEnd;
+
                     const timeRange = isFullDayEvent
                         ? 'All Day'
                         : this.timeFormat === '24-hour'
-                            ? `${eventStart.toLocaleString(DateTime.TIME_24_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_24_SIMPLE)}`
-                            : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
+                            ? `${adjustedStart.toLocaleString(DateTime.TIME_24_SIMPLE)} - ${adjustedEnd.toLocaleString(DateTime.TIME_24_SIMPLE)}`
+                            : `${adjustedStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${adjustedEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
 
-                    allEvents.push({ time: timeRange, title: event.summary, calendar, start: eventStart, end: eventEnd });
+                    allEvents.push({
+                        time: timeRange,
+                        title: event.summary,
+                        calendar,
+                        start: adjustedStart,
+                        end: adjustedEnd,
+                    });
                 }
             });
         }
