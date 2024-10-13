@@ -194,10 +194,11 @@ export class FamilyCalendarCard extends LitElement {
      * @returns {boolean} - True if the events overlap, false otherwise
      */
     _eventsOverlap(event1, event2) {
-        const event1Start = event1.start;
-        const event1End = event1.end;
-        const event2Start = event2.start;
-        const event2End = event2.end;
+        const overlapExtra = 5 * 60; // events starting and ending within x minutes, should be considered overlapping
+        const event1Start = event1.start.ts;
+        const event1End = (event1.end + overlapExtra);
+        const event2Start = event2.start.ts;
+        const event2End = event2.end.ts;
 
         return (event1Start < event2End) && (event1End > event2Start);
     }
