@@ -2,19 +2,17 @@ import { css } from 'lit';
 
 export default css`
     .family-calendar--content {
-        display: flex;
-        flex-direction: column;
+        display: grid;
     }
 
     .family-calendar--row {
         display: grid;
-        grid-template-columns: auto 1fr 1fr 1fr; /* Adjust the number of columns */
-        align-items: start;
+        gap: 5px;
+        border-bottom: 1px solid #ccc;
     }
 
     .family-calendar--header-row {
         font-weight: bold;
-        border-bottom: 2px solid #ccc;
     }
 
     .family-calendar--row-header {
@@ -25,7 +23,11 @@ export default css`
         padding: 10px;
     }
 
-    .family-calendar--date{
+    .family-calendar--date-field{
+        border-left: 1px solid #ccc;
+    }
+
+    .family-calendar--date-field-inner-wrapper{
         position: relative;
     }
 
@@ -33,31 +35,38 @@ export default css`
         font-weight: bold;
         text-align: center;
         padding: 5px;
-        border-bottom: 1px solid #ddd;
     }
 
     .family-calendar--event-grid {
         display: grid;
         grid-auto-flow: column;
-        gap: 5px; /* Space between events */
+        gap: 10px;
         position: absolute;
+        width: 100%;
     }
 
     .family-calendar--event {
-        padding: 5px;
-        background-color: #f0f0f0;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
         color: #333;
         overflow: hidden;
     }
 
     .family-calendar--event-time {
         font-size: 12px;
+        line-height: 12px;
+        padding: 5px 5px 0 5px;
     }
 
     .family-calendar--event-title {
         font-size: 14px;
+        line-height: 16px;
         font-weight: bold;
+        padding: 0 5px 5px 5px;
+    }
+
+    .family-calendar--no-events{
+        font-style: italic;
+        color: #999;
     }
 `;

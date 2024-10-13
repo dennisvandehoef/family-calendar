@@ -18,6 +18,7 @@ export class FamilyCalendarCard extends LitElement {
         this.calendarColors = {}; // Map calendar to color
         this._eventsFetched = false;
         this.currentDate = DateTime.now();
+        this.numberOfDays = 30; // the number of days we want to render
         this.endDate = this.currentDate.plus({ days: 30 }); // Calculated only once
         this.colorIndex = 0; // Index for unique color generation
         this.timeFormat = '24-hour'; // Default time format
@@ -37,7 +38,7 @@ export class FamilyCalendarCard extends LitElement {
 
     _renderHeaderRow() {
         return html`
-            <div class="family-calendar--row family-calendar--header-row">
+            <div class="family-calendar--row family-calendar--header-row" style="${this._rowColumnStyle()}">
                 <div class="family-calendar--field family-calendar--row-header"></div> <!-- Empty cell for the date column -->
                 ${this.config.columns.map((column) => html`
                     <div class="family-calendar--field family-calendar--column-header">${column.title}</div>
@@ -58,13 +59,19 @@ export class FamilyCalendarCard extends LitElement {
         return html`${rows.map((row) => html`${row}`)}`;
     }
 
+    _rowColumnStyle() {
+        const columnsCss = ' 3fr'.repeat(this.config.columns.length);
+        return 'grid-template-columns: 1fr' + columnsCss + ';';
+    }
+
     _renderRow(date) {
         const dateString = date.toFormat('yyyy-MM-dd');
         const allEventsForDate = this._getAllEventsForDate(dateString);
         const earliestEvent = this._findEarliestStartingEvent(allEventsForDate);
 
+
         return html`
-        <div class="family-calendar--row">
+        <div class="family-calendar--row" style="${this._rowColumnStyle()}">
             <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
             ${this.config.columns.map((column) => {
             // Gather all events for the calendars associated with this column
@@ -74,14 +81,15 @@ export class FamilyCalendarCard extends LitElement {
             const eventGroups = this._groupOverlappingEvents(eventsForColumn);
 
             if (eventGroups.length == 0) {
-                return html`<div class="family-calendar--field family-calendar--date">No events</div>`
+                return html`<div class="family-calendar--field family-calendar--date-field family-calendar--no-events">No events</div>`
             }
 
             const { top: baselineTop } = this._calculatePosition(earliestEvent.start, earliestEvent.end);
             let fullHeight = 0;
 
             return html`
-                    <div class="family-calendar--field family-calendar--date">
+                    <div class="family-calendar--field family-calendar--date-field">
+                    <div class="family-calendar--date-field-inner-wrapper">
                         ${eventGroups.map(group => {
                 // Assume the first event in the group defines the start time
                 const start = DateTime.fromISO(group[0].start);
@@ -95,25 +103,24 @@ export class FamilyCalendarCard extends LitElement {
                 fullHeight = height + top;
 
                 return html`
-                                    <div class="family-calendar--event-grid" style="top:${top}px; height: ${height}px; grid-template-columns: repeat(${group.length}, 1fr);">
-                                        ${group.map(event => {
+                        <div class="family-calendar--event-grid" style="top:${top}px; height: ${height}px; grid-template-columns: repeat(${group.length}, 1fr);">
+                            ${group.map(event => {
                     const { top: eventTop, height: eventHeight } = this._calculatePosition(event.start, event.end, (baselineTop + top));
 
                     return html`
-                                            <div class="family-calendar--event" style="min-height: ${this.oneHourHeight}px; margin-top:${eventTop}px; height: ${eventHeight}px; background-color: ${this.calendarColors[event.calendar]};">
-                                                <div class="family-calendar--event-time">${event.time}</div>
-                                                <div class="family-calendar--event-title">${event.title}</div>
-                                            </div>
-                                        `})}
-                                    </div>
-                                `;
-            })}
-
-                    <div class="family-calendar--event-filler" style="height: ${fullHeight}px;"></div>
+                            <div class="family-calendar--event" style="min-height: ${this.oneHourHeight}px; margin-top:${eventTop}px; height: ${eventHeight}px; background-color: ${this.calendarColors[event.calendar]};">
+                                <div class="family-calendar--event-time">${event.time}</div>
+                                <div class="family-calendar--event-title">${event.title}</div>
+                            </div>
+                        `})}
                     </div>
                 `;
+            })}
+                <div class="family-calendar--event-height-filler" style="height: ${fullHeight}px;"></div>
+            </div>
+            </div>
+            `;
         })}
-
         </div>
     `;
     }
@@ -304,15 +311,15 @@ export class FamilyCalendarCard extends LitElement {
     }
 
     getCardSize() {
-        return 5;
+        return Math.ceil(this.config.numberOfDays * 1.5);
     }
 
     getLayoutOptions() {
         return {
-            grid_rows: 3,
-            grid_columns: this.config.columns.length, // Dynamic columns
-            grid_min_rows: 3,
-            grid_max_rows: 3,
+            grid_min_rows: this.config.numberOfDays,
+            grid_rows: this.getCardSize(),
+            grid_min_columns: this.config.columns.length,
+            grid_columns: this.config.columns.length + 1,
         };
     }
 }
