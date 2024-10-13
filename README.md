@@ -44,6 +44,12 @@ These are future planned improvements, the implementation sequence can be differ
 - [ ] show details in popup
 - [ ] display not-yet accepted differently
 - [ ] option to hide/show redjected
+- [ ] Use less space to display events
+  - [ ] optimised width
+    - [ ] 3 events, that can be displayed in 2 columns without overlapping should be displayed in 2 columns instead of 3
+  - [ ] optimised height
+    - [ ] If an event starts at 0:00 (multiday), and the next at 9:00, only use 2 hour space diff
+    - [ ] If an event ends at 23:59 (multiday), and the last normal event ends at 18:00, only use 2 hour space diff
 - [x] allign appointments > appointments starting at 14 o'clock are all on the same hight, if on the same day (and below the ones starting at 9 o'clock, if excists)
 
 
