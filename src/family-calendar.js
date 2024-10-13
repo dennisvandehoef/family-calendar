@@ -49,7 +49,7 @@ export class FamilyCalendarCard extends LitElement {
         const rows = [];
         let currentDate = this.currentDate;
 
-        while (currentDate <= this.endDate) {
+        while (currentDate < this.endDate) {
             rows.push(this._renderRow(currentDate));
             currentDate = currentDate.plus({ days: 1 });
         }
@@ -62,32 +62,89 @@ export class FamilyCalendarCard extends LitElement {
         const allEventsForDate = this._getAllEventsForDate(dateString);
 
         return html`
-            <div class="family-calendar--row">
-                <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
-                ${this.config.columns.map((column) => {
-            // Filter events for the current column's calendars
+        <div class="family-calendar--row">
+            <div class="family-calendar--field family-calendar--row-header">${date.toLocaleString(DateTime.DATE_MED)}</div>
+            ${this.config.columns.map((column) => {
+            // Gather all events for the calendars associated with this column
             const eventsForColumn = allEventsForDate.filter(event => column.calendars.includes(event.calendar));
+
+            // Group overlapping events
+            const eventGroups = this._groupOverlappingEvents(eventsForColumn);
+
             return html`
-                        <div class="family-calendar--field family-calendar--date">
-                            ${eventsForColumn.length > 0
-                    ? eventsForColumn.map(event => html`
-                                    <div class="family-calendar--event" style="background-color: ${this.calendarColors[event.calendar]};">
-                                        <div class="family-calendar--event-time">${event.time}</div>
-                                        <div class="family-calendar--event-title">${event.title}</div>
-                                    </div>
-                                `)
+                    <div class="family-calendar--field family-calendar--date">
+                        ${eventGroups.length > 0
+                    ? eventGroups.map(group => html`
+                                <div class="family-calendar--event-grid" style="grid-template-columns: repeat(${group.length}, 1fr);">
+                                    ${group.map(event => html`
+                                        <div class="family-calendar--event" style="background-color: ${this.calendarColors[event.calendar]};">
+                                            <div class="family-calendar--event-time">${event.time}</div>
+                                            <div class="family-calendar--event-title">${event.title}</div>
+                                        </div>
+                                    `)}
+                                </div>
+                            `)
                     : 'No events'}
-                        </div>
-                    `;
+                    </div>
+                `;
         })}
-            </div>
-        `;
+        </div>
+    `;
+    }
+
+    _groupOverlappingEvents(events) {
+        const eventGroups = [];
+
+        events.forEach(event => {
+            let addedToGroup = false;
+
+            // Check if the event overlaps with any event in the group
+            for (const group of eventGroups) {
+                let overlapsWithGroup = false;
+
+                // Compare the event with all events in the current group
+                for (const groupEvent of group) {
+                    if (this._eventsOverlap(groupEvent, event)) {
+                        overlapsWithGroup = true;
+                        break; // If overlap is found, no need to check further
+                    }
+                }
+
+                // If it overlaps with any event in the group, add it to this group
+                if (overlapsWithGroup) {
+                    group.push(event);
+                    addedToGroup = true;
+                    break; // Stop checking other groups if event is added
+                }
+            }
+
+            // If no overlap with any group, create a new group for this event
+            if (!addedToGroup) {
+                eventGroups.push([event]);
+            }
+        });
+
+        return eventGroups;
+    }
+
+    /**
+     * Checks if two events overlap.
+     * @param {Object} event1 - First event
+     * @param {Object} event2 - Second event
+     * @returns {boolean} - True if the events overlap, false otherwise
+     */
+    _eventsOverlap(event1, event2) {
+        const event1Start = event1.start;
+        const event1End = event1.end;
+        const event2Start = event2.start;
+        const event2End = event2.end;
+
+        return (event1Start < event2End) && (event1End > event2Start);
     }
 
     _getAllEventsForDate(dateString) {
         const allEvents = [];
 
-        // Collect events across all calendars for a given date
         for (const calendar of Object.keys(this.events)) {
             const events = this.events[calendar] || [];
 
@@ -98,7 +155,18 @@ export class FamilyCalendarCard extends LitElement {
 
             events.forEach(event => {
                 const eventStart = DateTime.fromISO(event.start);
-                const eventEnd = DateTime.fromISO(event.end);
+                let eventEnd = event.end ? DateTime.fromISO(event.end) : null;
+
+                // Handle full-day events or events without an explicit end
+                if (!eventEnd) {
+                    if (event.all_day) {
+                        // Set full-day event as lasting from start of the day to the end
+                        eventEnd = eventStart.endOf('day');
+                    } else {
+                        // Default to 1-hour duration for events without an end
+                        eventEnd = eventStart.plus({ hours: 1 });
+                    }
+                }
 
                 // Event occurs on the same day or spans this date
                 const isOnDate = eventStart.toFormat('yyyy-MM-dd') === dateString ||
@@ -112,7 +180,7 @@ export class FamilyCalendarCard extends LitElement {
                             ? `${eventStart.toLocaleString(DateTime.TIME_24_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_24_SIMPLE)}`
                             : `${eventStart.toLocaleString(DateTime.TIME_SIMPLE)} - ${eventEnd.toLocaleString(DateTime.TIME_SIMPLE)}`;
 
-                    allEvents.push({ time: timeRange, title: event.summary, calendar, start: eventStart });
+                    allEvents.push({ time: timeRange, title: event.summary, calendar, start: eventStart, end: eventEnd });
                 }
             });
         }

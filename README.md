@@ -13,7 +13,7 @@ This is still under development and not ready to be used, but I wanted write iss
 - [x] Be able to configure number of columns, column title & calendars per column
 - [x] Show events ...
   - [x] on the correct days
-  - [ ] multiple events same time
+  - [x] multiple events same time
   - [ ] multi day events
     - [ ] starting before first visible day
     - [ ] ending after last visible day
