@@ -2,7 +2,7 @@
 
 Custom Home Assistant card to display multiple calendars in a responsive version of a classical family calender. You know, the one with a column per person.
 
-This is still under development and not ready to be used, but I wanted write issues and milestones to track my progress while working on the first version. That's why you allready find this reposiory.
+This is still under development and not ready to be used.
 
 
 ## Open Todo's
@@ -18,10 +18,8 @@ This is still under development and not ready to be used, but I wanted write iss
     - [x] middle of calendar
     - [x] starting before first visible day
     - [x] ending after last visible day
-  - [ ] full day events
-    - [ ] middle of calendar
-    - [ ] starting before first visible day
-    - [ ] ending after last visible day
+  - [x] full day events
+    - [x] middle of calendar
 - [ ] Show card in list of cards
 - [x] basic layout
 

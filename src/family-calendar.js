@@ -307,12 +307,20 @@ export class FamilyCalendarCard extends LitElement {
                     `calendars/${calendar}?start=${encodeURIComponent(startDateISO)}&end=${encodeURIComponent(endDateISO)}`
                 );
 
-                return response.map(event => ({
-                    summary: event.summary,
-                    start: event.start.dateTime,
-                    end: event.end.dateTime,
-                    all_day: !event.start.dateTime,
-                }));
+                return response.map(event => {
+                    const isAllDay = !event.start.dateTime;
+
+                    return {
+                        summary: event.summary,
+                        start: isAllDay
+                            ? `${event.start.date}T00:00:00`
+                            : event.start.dateTime,
+                        end: isAllDay
+                            ? `${event.end.date}T23:59:59`
+                            : event.end.dateTime,
+                        all_day: isAllDay,
+                    };
+                });
             } catch (error) {
                 console.error('Error fetching calendar events:', error);
                 return [];
